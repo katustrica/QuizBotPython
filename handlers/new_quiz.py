@@ -46,3 +46,14 @@ async def set_time_between_questions(message: types.Message):
     await message.answer("Создайте вопрос, для этого используйте кнопку ниже.",
                          reply_markup=poll_keyboard)
 
+
+@dp.message_handler(state=CreateQuiz.waiting_for_question, content_types=types.ContentTypes.POLL)
+async def setup_question_for_quiz(message: types.Message):
+    global quiz
+    quiz.add_question(message.poll.question, message.poll.options,
+                      message.poll.correct_option_id, message.poll.id, message.from_user.id)
+    poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    poll_keyboard.add(types.KeyboardButton(text="Создать еще вопрос",
+                                           request_poll=types.KeyboardButtonPollType(type=types.PollType.QUIZ)))
+    poll_keyboard.add(types.KeyboardButton(text="Закончить создание вопрсов и создать новый раунд."))
+    await message.reply(f"Был добавлен вопрос '{message.poll.question}'", reply_markup=poll_keyboard)
