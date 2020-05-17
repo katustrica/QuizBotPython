@@ -14,15 +14,6 @@ async def cmd_cancel(message: types.Message, state: FSMContext):  # обрати
     await message.answer('Действие отменено', reply_markup=types.ReplyKeyboardRemove())
 
 
-@dp.message_handler(Text(equals="Закончить создание вопросов и создать новый раунд.", ignore_case=True), state='*')
-async def cmd_cancel_creating_poll(message: types.Message):
-    await CreateQuiz.waiting_for_round_name.set()
-    await message.reply(
-        'Пришлите название Вашего раунда (например, «История математики»).',
-        reply_markup=types.ReplyKeyboardRemove()
-    )
-
-
 @dp.message_handler(commands=['start'], state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
     if message.from_user.id in admin_id:  # Подставьте сюда свой Telegram ID

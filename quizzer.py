@@ -13,7 +13,7 @@ quiz_path = Path.cwd() / 'quizs'
 class Quiz:
     def __init__(self, quiz_name):
         self.quiz_name: str = quiz_name  #Имя игры.
-        self.rounds: OrderedDict[str, List[Quiz]] = OrderedDict()
+        self.rounds: OrderedDict[str, List[Question]] = OrderedDict()
         self.times_between_questions: Dict[str, int] = {}
         logging.info(f'Создана игра - {quiz_name}')
 
@@ -29,12 +29,9 @@ class Quiz:
         self.times_between_questions[current_round] = time_in_seconds  #Задает время между вопросоами в секундах.
         logging.info(f'Для раунда {current_round} задано время между вопросами - {time_in_seconds} секунд')
 
-    def add_question(self, question_text, options, correct_option_id, quiz_id, owner_id):
+    def add_question(self, question_text, options, correct_option_id):
         self.rounds[current_round].append(
-            Question(question_text=question_text, round_name=current_round,
-                     options=options, correct_option_id=correct_option_id,
-                     quiz_id=quiz_id, owner_id=owner_id)
-        )
+            Question(question_text=question_text, options=options, correct_option_id=correct_option_id))
         logging.info(f'Для раунда {current_round} добавлен новый вопрос - {question_text}')
 
     def load_json(self, quiz_name) -> 'json':
@@ -66,8 +63,7 @@ class Quiz:
 class Question:
     type: str = 'question'
 
-    def __init__(self, round_name, quiz_id, question_text, options, correct_option_id, owner_id):
-        self.round_name: str = round_name                # Название раунда
+    def __init__(self, question_text, options, correct_option_id):
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
         self.correct_option_id: int = correct_option_id  # int правильного ответа
