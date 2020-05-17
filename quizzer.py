@@ -4,6 +4,7 @@ from collections import OrderedDict
 from pathlib import Path
 import json
 import io
+import jsonpickle
 
 quiz = None
 current_round = None
@@ -14,7 +15,7 @@ class Quiz:
     def __init__(self, quiz_name):
         self.quiz_name: str = quiz_name  #Имя игры.
         self.rounds: OrderedDict[str, List[Question]] = OrderedDict()
-        self.times_between_questions: Dict[str, int] = {}
+        self.times_between_questions: dict[str, int] = {}
         logging.info(f'Создана игра - {quiz_name}')
 
     def add_round(self, round_name):
@@ -59,6 +60,12 @@ class Quiz:
                     new_question.correct_option_id = answer['correct_answer']
                     quiz.rounds.update({rounds: new_question})
 
+    def to_json(self):
+        path = quiz_path / f'{self.quiz_name}.json'
+        json_string = jsonpickle.encode(self)
+        with open(path, 'w') as f:
+            f.write(json_string)
+
 
 class Question:
     type: str = 'question'
@@ -66,4 +73,4 @@ class Question:
     def __init__(self, question_text, options, correct_option_id):
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
-        self.correct_option_id: int = correct_option_id  # int правильного ответа
+        self.correct_option_id: int = correct_option_id  # ID правильного ответа
