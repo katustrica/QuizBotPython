@@ -46,19 +46,12 @@ class Quiz:
 
     @classmethod
     def from_json(cls, quiz_name):
-        json_str = cls.load_json(quiz_name)
-        quiz = cls.__new__(cls)
-        quiz.quiz_name = quiz_name
-        quiz.times_between_questions = json_str[0]['Время между вопросами']
-        quiz.rounds = {}
-        for rounds, questions in json_str[0].items():
-            if isinstance(questions, dict):
-                for question, answer in questions.items():
-                    new_question = Question()
-                    new_question.question_text = question
-                    new_question.options = answer['answers']
-                    new_question.correct_option_id = answer['correct_answer']
-                    quiz.rounds.update({rounds: new_question})
+        path = quiz_path / f'{quiz_name}.json'
+        with open(path, 'w') as f:
+            json_str = f.read()
+            json_string = jsonpickle.decode(json_str)
+        # TODO: Fix this.
+        return None
 
     def to_json(self):
         path = quiz_path / f'{self.quiz_name}.json'
