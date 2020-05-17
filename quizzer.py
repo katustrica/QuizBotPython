@@ -1,9 +1,13 @@
 import logging
 from typing import List, Dict
 from collections import OrderedDict
+from pathlib import Path
+import json
+import io
 
 quiz = None
 current_round = None
+quiz_path = Path.cwd() / 'quizs'
 
 
 class Quiz:
@@ -30,12 +34,32 @@ class Quiz:
             Question(question_text=question_text, options=options, correct_option_id=correct_option_id)
         )
 
+    def load_json(self, quiz_name) -> 'json':
+        path = quiz_path / f'{quiz_name}.json'
+        if not path.exists():
+            raise FileExistsError(f'No such file: {path.name}')
+
+        with io.open(path, encoding='utf-8') as f:
+            attributes = json.load(f)
+            return attributes
+
+    @classmethod
+    def from_json(cls, quiz_name):
+        json_str = cls.load_json(quiz_name)
+        quiz = cls.__new__(cls)
+        quiz.quiz_name = quiz_name
+        quiz.times_between_questions = json_str[0]['Время между вопросами']
 
 
 class Question:
     type: str = 'question'
 
-    def __init__(self, quiz_id, question_text, options, correct_option_id, owner_id):
+    def __init__(self, round_name, question_text, options, correct_option_id):
+        self.round_name: str = round_name                # Название раунда
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
-        self.correct_option_id: int = correct_option_id  # ID правильного ответа
+        self.correct_option_id: str = correct_option_id  # str правильного ответа
+
+    @classmethod
+    def from_json_str(cls, quiz_name):
+        pass
