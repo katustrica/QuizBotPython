@@ -49,6 +49,15 @@ class Quiz:
         quiz = cls.__new__(cls)
         quiz.quiz_name = quiz_name
         quiz.times_between_questions = json_str[0]['Время между вопросами']
+        quiz.rounds = {}
+        for rounds, questions in json_str[0].items():
+            if isinstance(questions, dict):
+                for question, answer in questions.items():
+                    new_question = Question()
+                    new_question.question_text = question
+                    new_question.options = answer['answers']
+                    new_question.correct_option_id = answer['correct_answer']
+                    quiz.rounds.update({rounds: new_question})
 
 
 class Question:
@@ -59,7 +68,3 @@ class Question:
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
         self.correct_option_id: str = correct_option_id  # str правильного ответа
-
-    @classmethod
-    def from_json_str(cls, quiz_name):
-        pass
