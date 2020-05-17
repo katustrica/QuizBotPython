@@ -15,7 +15,7 @@ class Quiz:
     def __init__(self, quiz_name):
         self.quiz_name: str = quiz_name  #Имя игры.
         self.rounds: OrderedDict[str, List[Question]] = OrderedDict()
-        self.times_between_questions: dict[str, int] = {}
+        self.times_between_questions: Dict[str, int] = {}
         logging.info(f'Создана игра - {quiz_name}')
 
     def add_round(self, round_name):
