@@ -27,6 +27,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
                               reply_markup=keyboard)
 
 
+
 # @dp.message_handler(commands='set_commands', state='*')
 # async def cmd_set_commands(message: types.Message):
 #     if message.from_user.id in admin_id:  # Подставьте сюда свой Telegram ID
