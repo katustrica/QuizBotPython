@@ -26,7 +26,7 @@ async def create_new_quiz(message: types.Message):
 @dp.message_handler(state=CreateQuiz.waiting_for_quiz_name, content_types=types.ContentTypes.TEXT)
 async def set_name_for_quiz(message: types.Message):
     global quiz
-    quiz = Quiz(message.text) # Подставьте сюда свой Telegram ID
+    quiz = Quiz(message.text)
     await CreateQuiz.waiting_for_round_name.set()
     await message.reply(
         'Пришлите название Вашего раунда (например, «История математики»).',
@@ -36,17 +36,17 @@ async def set_name_for_quiz(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_round_name, content_types=types.ContentTypes.TEXT)
 async def set_name_for_round(message: types.Message):
-    global quiz
+    global current_round
+    current_round = message.text
     quiz.add_round(message.text)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add('15 сек.', '30 сек.', '1 мин.', '5 мин.', '10 мин.', '15 мин.', 'Отмена')
+    keyboard.add('15 сек.', '30 сек.', '1 мин.', '5 мин.', '10 мин.', 'Отмена')
     await CreateQuiz.waiting_for_time_between_questions.set()
     await message.reply('Какой промежуток будет между вопросами?', reply_markup=keyboard)
 
 
 @dp.message_handler(state=CreateQuiz.waiting_for_time_between_questions, content_types=types.ContentTypes.TEXT)
 async def set_time_between_questions(message: types.Message):
-    global quiz
     quiz.set_time_between_quiestions(message.text)
     poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     poll_keyboard.add(types.KeyboardButton(text="Создать вопрос",
@@ -59,7 +59,6 @@ async def set_time_between_questions(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_question, content_types=types.ContentTypes.POLL)
 async def setup_question_for_quiz(message: types.Message):
-    global quiz
     quiz.add_question(message.poll.question, message.poll.options, message.poll.correct_option_id)
     poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     poll_keyboard.add(types.KeyboardButton(text="Создать еще вопрос",
@@ -67,6 +66,13 @@ async def setup_question_for_quiz(message: types.Message):
     poll_keyboard.add(types.KeyboardButton(text="Cоздать новый раунд."))
     poll_keyboard.add(types.KeyboardButton(text="Cохранить квиз."))
     poll_keyboard.add(types.KeyboardButton(text='Отмена'))
+    await message.reply(
+        f'Имя игры: {quiz.quiz_name}\n'
+        f'Текущий раунд: {current_round}\n'
+        f'Задержка между вопросами (сек.): {quiz.times_between_questions[current_round]}\n'
+        f'Количество вопросов: {len(quiz.rounds[current_round])}\n',
+        reply_markup=types.ReplyKeyboardRemove()
+    )
     await message.reply(f"Был добавлен вопрос '{message.poll.question}'", reply_markup=poll_keyboard)
 
 
@@ -87,6 +93,13 @@ async def save_quiz(message: types.Message, state: FSMContext):
             ["Создать новый квиз"], ["Готовые квизы"]
         ], resize_keyboard=True)
     quiz.save()
+    await message.reply(
+        f'Имя игры: {quiz.quiz_name}\n'
+        f'Названия раундов: {list(quiz.rounds.keys())}\n'
+        f'Задержка между вопросами (сек.): {list(quiz.times_between_questions.values())}\n'
+        f'Количество раундов: {len(quiz.rounds.values())}\n', #нахуй не вперлось
+        reply_markup=types.ReplyKeyboardRemove()
+    )
     await state.finish()
     await message.answer(
         'Начните новый квиз или выберете из существующих.', reply_markup=poll_keyboard
