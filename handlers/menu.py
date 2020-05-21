@@ -32,4 +32,6 @@ async def show_quizes(message: types.Message, state: FSMContext):
     await message.answer(f'Вы выбрали квиз - {message.text}',
                          reply_markup=keyboard)
 
+def get_current_quiz():
+    return quiz
 

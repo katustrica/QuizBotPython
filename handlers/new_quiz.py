@@ -40,7 +40,7 @@ async def set_name_for_round(message: types.Message):
     current_round = message.text
     quiz.add_round(message.text)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add('15 сек.', '30 сек.', '1 мин.', '5 мин.', '10 мин.', '15 мин.', 'Отмена')
+    keyboard.add('15 сек.', '30 сек.', '1 мин.', '5 мин.', '10 мин.', 'Отмена')
     await CreateQuiz.waiting_for_time_between_questions.set()
     await message.reply('Какой промежуток будет между вопросами?', reply_markup=keyboard)
 
