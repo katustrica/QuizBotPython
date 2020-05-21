@@ -29,7 +29,6 @@ class Quiz:
         logging.info(f'Для раунда {current_round} задано время между вопросами - {time_in_seconds} секунд')
 
     def add_question(self, question_text, options, correct_option_id):
-        import pdb; pdb.set_trace()
         self.rounds[current_round].append(
             Question(question_text=question_text,
                      options=[o.text for o in options],
