@@ -1,15 +1,21 @@
+import io
+import json
+import pickle
 import logging
+from misc import quizes_path
 from typing import List, Dict
 from collections import OrderedDict
+<<<<<<< HEAD
 from pathlib import Path
 import json
 import io
 import jsonpickle
+=======
+
+>>>>>>> 6aba5d2780313f0eb1b1cda8bd993a90f405b4da
 
 quiz = None
 current_round = None
-quiz_path = Path.cwd() / 'quizs'
-
 
 class Quiz:
     def __init__(self, quiz_name):
@@ -32,38 +38,23 @@ class Quiz:
 
     def add_question(self, question_text, options, correct_option_id):
         self.rounds[current_round].append(
-            Question(question_text=question_text, options=options, correct_option_id=correct_option_id))
+            Question(question_text=question_text,
+                     options=options,
+                     correct_option_id=correct_option_id,
+                     open_time=times_between_questions[current_round]))
         logging.info(f'Для раунда {current_round} добавлен новый вопрос - {question_text}')
 
-    def load_json(self, quiz_name) -> 'json':
-        path = quiz_path / f'{quiz_name}.json'
-        if not path.exists():
-            raise FileExistsError(f'No such file: {path.name}')
-
-        with io.open(path, encoding='utf-8') as f:
-            attributes = json.load(f)
-            return attributes
-
-    @classmethod
-    def from_json(cls, quiz_name):
-        path = quiz_path / f'{quiz_name}.json'
-        with open(path, 'w') as f:
-            json_str = f.read()
-            json_string = jsonpickle.decode(json_str)
-        # TODO: Fix this.
-        return None
-
-    def to_json(self):
-        path = quiz_path / f'{self.quiz_name}.json'
-        json_string = jsonpickle.encode(self)
-        with open(path, 'w') as f:
-            f.write(json_string)
-
+    def save(self):
+        filepath = quizes_path / f'{self.quiz_name}.pickle'
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        with open(filepath, 'wb') as f:
+            pickle.dump(self, f)
 
 class Question:
     type: str = 'question'
 
-    def __init__(self, question_text, options, correct_option_id):
+    def __init__(self, question_text, options, correct_option_id, open_time):
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
-        self.correct_option_id: int = correct_option_id  # ID правильного ответа
+        self.correct_option_id: int = correct_option_id
+        self.open_time: int = open_time  # int правильного ответа
