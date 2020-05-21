@@ -5,14 +5,6 @@ import logging
 from misc import quizes_path
 from typing import List, Dict
 from collections import OrderedDict
-<<<<<<< HEAD
-from pathlib import Path
-import json
-import io
-import jsonpickle
-=======
-
->>>>>>> 6aba5d2780313f0eb1b1cda8bd993a90f405b4da
 
 quiz = None
 current_round = None
