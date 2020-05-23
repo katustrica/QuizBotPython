@@ -1,6 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
+import asyncio
 import time
 from misc import dp, bot, admin_id
 from user import User, all_users
@@ -43,10 +44,10 @@ async def cmd_start(message: types.Message, state: FSMContext):
                 await bot.send_poll(chat_id=message.chat.id, question=question.question_text,
                                     is_anonymous=False, options=question.options, type="quiz",
                                     correct_option_id=question.correct_option_id, open_period=question.open_time)
-                time.sleep(quiz.times_between_questions[round_name])
+                await asyncio.sleep(quiz.times_between_questions[round_name])
                 if number == len(quiz.rounds[round_name]):
                     await message.answer(f"Раунд {round_name} закончен")
-            time.sleep(5)
+            await asyncio.sleep(5)
 
         await message.answer(f'Поздравляю!!! Квиз окончен, вы набрали {all_users[message.from_user.id].score} очков.')
 
