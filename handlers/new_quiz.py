@@ -3,8 +3,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 
-from misc import dp, bot, admin_id
-from quizzer import Quiz, Question, quiz, current_round
+from misc import dp
+from .menu import menu_keyboard
+from quizzer import Quiz, quiz, current_round
 
 
 class CreateQuiz(StatesGroup):
@@ -14,7 +15,7 @@ class CreateQuiz(StatesGroup):
     waiting_for_question = State()
 
 
-@dp.message_handler(Text(equals="Создать новый квиз", ignore_case=True), state='*')
+@dp.message_handler(Text(equals='Создать новый квиз', ignore_case=True), state='*')
 async def create_new_quiz(message: types.Message):
     await message.reply('Вы решили создать новый Квиз.\n'
                         'Для начала, пожалуйста, пришлите название\n'
@@ -49,11 +50,11 @@ async def set_name_for_round(message: types.Message):
 async def set_time_between_questions(message: types.Message):
     quiz.set_time_between_quiestions(message.text)
     poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    poll_keyboard.add(types.KeyboardButton(text="Создать вопрос",
+    poll_keyboard.add(types.KeyboardButton(text='Создать вопрос',
                                            request_poll=types.KeyboardButtonPollType(type=types.PollType.QUIZ)))
     poll_keyboard.add(types.KeyboardButton(text='Отмена'))
     await CreateQuiz.waiting_for_question.set()
-    await message.answer("Создайте вопрос, для этого используйте кнопку ниже.",
+    await message.answer('Создайте вопрос, для этого используйте кнопку ниже.',
                          reply_markup=poll_keyboard)
 
 
@@ -61,10 +62,10 @@ async def set_time_between_questions(message: types.Message):
 async def setup_question_for_quiz(message: types.Message):
     quiz.add_question(message.poll.question, message.poll.options, message.poll.correct_option_id)
     poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    poll_keyboard.add(types.KeyboardButton(text="Создать еще вопрос",
+    poll_keyboard.add(types.KeyboardButton(text='Создать еще вопрос',
                                            request_poll=types.KeyboardButtonPollType(type=types.PollType.QUIZ)))
-    poll_keyboard.add(types.KeyboardButton(text="Cоздать новый раунд."))
-    poll_keyboard.add(types.KeyboardButton(text="Cохранить квиз."))
+    poll_keyboard.add(types.KeyboardButton(text='Cоздать новый раунд.'))
+    poll_keyboard.add(types.KeyboardButton(text='Cохранить квиз.'))
     poll_keyboard.add(types.KeyboardButton(text='Отмена'))
     await message.reply(
         f'Имя игры: {quiz.quiz_name}\n'
@@ -73,10 +74,10 @@ async def setup_question_for_quiz(message: types.Message):
         f'Количество вопросов: {len(quiz.rounds[current_round])}\n',
         reply_markup=types.ReplyKeyboardRemove()
     )
-    await message.reply(f"Был добавлен вопрос '{message.poll.question}'", reply_markup=poll_keyboard)
+    await message.reply(f'Был добавлен вопрос {message.poll.question}', reply_markup=poll_keyboard)
 
 
-@dp.message_handler(Text(equals="Cоздать новый раунд.", ignore_case=True),
+@dp.message_handler(Text(equals='Cоздать новый раунд.', ignore_case=True),
                     state=CreateQuiz.waiting_for_question)
 async def new_round(message: types.Message):
     await CreateQuiz.waiting_for_round_name.set()
@@ -86,21 +87,23 @@ async def new_round(message: types.Message):
     )
 
 
-@dp.message_handler(Text(equals="Cохранить квиз.", ignore_case=True), state=CreateQuiz.waiting_for_question)
+@dp.message_handler(Text(equals='Cохранить квиз.', ignore_case=True), state=CreateQuiz.waiting_for_question)
 async def save_quiz(message: types.Message, state: FSMContext):
     global quiz
-    poll_keyboard = types.ReplyKeyboardMarkup([
-            ["Создать новый квиз"], ["Готовые квизы"]
-        ], resize_keyboard=True)
     quiz.save()
     await message.reply(
         f'Имя игры: {quiz.quiz_name}\n'
         f'Названия раундов: {list(quiz.rounds.keys())}\n'
         f'Задержка между вопросами (сек.): {list(quiz.times_between_questions.values())}\n'
-        f'Количество раундов: {len(quiz.rounds.values())}\n', #нахуй не вперлось
+        f'Количество раундов: {len(quiz.rounds.values())}\n',
         reply_markup=types.ReplyKeyboardRemove()
     )
     await state.finish()
     await message.answer(
-        'Начните новый квиз или выберете из существующих.', reply_markup=poll_keyboard
+        'Начните новый квиз или выберете из существующих.', reply_markup=menu_keyboard
     )
+
+
+def current_quiz():
+    global quiz
+    return quiz
