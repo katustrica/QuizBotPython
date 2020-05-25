@@ -5,7 +5,7 @@ from aiogram.dispatcher.filters import Text
 
 from misc import dp
 from .menu import menu_keyboard
-from quizzer import Quiz, quiz, current_round
+from quizzer import Quiz, set_quiz, get_quiz, current_round, set_current_round
 
 
 class CreateQuiz(StatesGroup):
@@ -26,8 +26,7 @@ async def create_new_quiz(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_quiz_name, content_types=types.ContentTypes.TEXT)
 async def set_name_for_quiz(message: types.Message):
-    global quiz
-    quiz = Quiz(message.text)
+    set_quiz(Quiz(message.text))
     await CreateQuiz.waiting_for_round_name.set()
     await message.reply(
         'Пришлите название Вашего раунда (например, «История математики»).',
@@ -37,9 +36,10 @@ async def set_name_for_quiz(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_round_name, content_types=types.ContentTypes.TEXT)
 async def set_name_for_round(message: types.Message):
-    global current_round
-    current_round = message.text
+    set_current_round(message.text)
+    quiz = get_quiz()
     quiz.add_round(message.text)
+    set_quiz(quiz)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add('15 сек.', '30 сек.', '1 мин.', '5 мин.', '10 мин.', 'Отмена')
     await CreateQuiz.waiting_for_time_between_questions.set()
@@ -48,7 +48,9 @@ async def set_name_for_round(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_time_between_questions, content_types=types.ContentTypes.TEXT)
 async def set_time_between_questions(message: types.Message):
+    quiz = get_quiz()
     quiz.set_time_between_quiestions(message.text)
+    set_quiz(quiz)
     poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     poll_keyboard.add(types.KeyboardButton(text='Создать вопрос',
                                            request_poll=types.KeyboardButtonPollType(type=types.PollType.QUIZ)))
@@ -60,6 +62,7 @@ async def set_time_between_questions(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_question, content_types=types.ContentTypes.POLL)
 async def setup_question_for_quiz(message: types.Message):
+    quiz = get_quiz()
     quiz.add_question(message.poll.question, message.poll.options, message.poll.correct_option_id)
     poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     poll_keyboard.add(types.KeyboardButton(text='Создать еще вопрос',
@@ -74,6 +77,7 @@ async def setup_question_for_quiz(message: types.Message):
         f'Количество вопросов: {len(quiz.rounds[current_round])}\n',
         reply_markup=types.ReplyKeyboardRemove()
     )
+    set_quiz(quiz)
     await message.reply(f'Был добавлен вопрос {message.poll.question}', reply_markup=poll_keyboard)
 
 
@@ -89,7 +93,7 @@ async def new_round(message: types.Message):
 
 @dp.message_handler(Text(equals='Cохранить квиз.', ignore_case=True), state=CreateQuiz.waiting_for_question)
 async def save_quiz(message: types.Message, state: FSMContext):
-    global quiz
+    quiz = get_quiz()
     quiz.save()
     await message.reply(
         f'Имя игры: {quiz.quiz_name}\n'
@@ -102,8 +106,3 @@ async def save_quiz(message: types.Message, state: FSMContext):
     await message.answer(
         'Начните новый квиз или выберете из существующих.', reply_markup=menu_keyboard
     )
-
-
-def current_quiz():
-    global quiz
-    return quiz

@@ -5,14 +5,44 @@ import asyncio
 import logging
 from aiogram.types import Message
 from misc import quizes_path, bot, admin_id
-from user import User, all_users
+from user import User, get_all_users, set_all_users
 from typing import List, Dict
 from collections import OrderedDict
-from handlers.new_quiz import current_quiz
 
 quiz = None
 current_round = None
 current_question_correct_id = None
+
+
+def get_quiz():
+    global quiz
+    return quiz
+
+
+def set_quiz(value):
+    global quiz
+    quiz = value
+
+
+def get_current_round():
+    global current_round
+    return current_round
+
+
+def set_current_round(value):
+    global current_round
+    current_round = value
+
+
+def get_current_question_correct_id():
+    global current_question_correct_id
+    return current_question_correct_id
+
+
+def set_current_question_correct_id(value):
+    global current_question_correct_id
+    current_question_correct_id = value
+
 
 class Quiz:
     def __init__(self, quiz_name):
@@ -22,8 +52,7 @@ class Quiz:
         logging.info(f'Создана игра - {quiz_name}')
 
     def add_round(self, round_name):
-        global current_round
-        current_round = round_name
+        set_current_round(round_name)
         self.rounds[round_name] = []
         logging.info(f'Добавлен раунд - {round_name}')
 
@@ -58,14 +87,14 @@ class Quiz:
                 current_question_correct_id = question.correct_option_id
                 await bot.send_poll(chat_id=message.chat.id, question=question.question_text,
                                     is_anonymous=False, options=question.options, type='quiz',
-                                    correct_option_id=question.correct_option_id, open_period=question.open_time)
-                await asyncio.sleep(self.times_between_questions[round_name])
+                                    correct_option_id=question.correct_option_id, open_period=question.open_time-25)
+                await asyncio.sleep(self.times_between_questions[round_name]-25)
                 if number == len(self.rounds[round_name]):
                     await message.answer(f'Раунд {round_name} закончен')
             await asyncio.sleep(5)
-        await message.answer(f'Поздравляю!!! Квиз окончен, вы набрали {all_users[message.from_user.id].score} очков.')
+        await message.answer(f'Поздравляю!!! Квиз окончен, вы набрали {get_all_user()[message.from_user.id].score} очков.')
 
-        results = '\n'.join([user.result for user in all_users.values()])
+        results = '\n'.join([user.result for user in get_all_users().values()])
         for id in admin_id:
             await bot.send_message(id, results)
 
@@ -81,11 +110,12 @@ class Question:
 
 
 async def start_quiz_for_user(message: Message):
-    quiz_game = current_quiz
-    import pdb; pdb.set_trace()
+    quiz_game = get_quiz()
     if isinstance(quiz_game, Quiz):
         await message.answer(f'Начался квиз - {quiz_game.quiz_name}')
+        all_users = get_all_users()
         all_users[message.from_user.id] = User(message.from_user.full_name)
-        quiz_game.start_rounds(message)
+        set_all_users(all_users)
+        await quiz_game.start_rounds(message)
     else:
         await message.answer(f'Квиз не загружен.')

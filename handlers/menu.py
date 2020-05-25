@@ -1,6 +1,6 @@
 from misc import quizes_path, dp
 from pickle import load
-from quizzer import quiz
+from quizzer import set_quiz, get_quiz
 from aiogram.types import ReplyKeyboardMarkup, Message
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -37,21 +37,21 @@ async def show_quizes(message: Message):
 
 
 @dp.message_handler(state=ShowQuiz.waiting_for_quiz_name)
-async def set_quiz(message: Message, state: FSMContext):
+async def set_quiz_menu(message: Message, state: FSMContext):
     if message.text == 'Отмена':
         await state.finish()
         await message.answer(f'Хотите создать или активировать квиз?', reply_markup=menu_keyboard)
-    with open(quizes_path / f'{message.text}.pickle', 'rb') as f:
-        global quiz
-        quiz = load(f)
-    await state.finish()
-    await message.answer(f'Вы выбрали квиз - {message.text}',
-                         reply_markup=menu_keyboard)
+    else:
+        with open(quizes_path / f'{message.text}.pickle', 'rb') as f:
+            set_quiz(load(f))
+        await state.finish()
+        await message.answer(f'Вы выбрали квиз - {message.text}',
+                             reply_markup=menu_keyboard)
 
 
 @dp.message_handler(Text(equals='Управление квизом', ignore_case=True), state='*')
 async def select_quiz_actions(message: Message):
-    global quiz
+    quiz = get_quiz()
     if quiz:
         await ControllQuiz.waiting_for_action.set()
         await message.answer(
@@ -65,11 +65,11 @@ async def select_quiz_actions(message: Message):
 @dp.message_handler(Text(equals=['Деактивировать', 'Удалить'], ignore_case=True),
                     state=ControllQuiz.waiting_for_action)
 async def quiz_action(message: Message, state: FSMContext):
-    global quiz
+    quiz = get_quiz()
     if message.text == 'Деактивировать':
         await message.answer(f'Квиз {quiz.quiz_name} деактивирован.', reply_markup=menu_keyboard)
         await state.finish()
-        quiz = None
+        set_quiz(None)
     elif message.text == 'Удалить':
         await ControllQuiz.waiting_for_delete_confirmation.set()
         keyboard = ReplyKeyboardMarkup([['Да'], ['Нет']], resize_keyboard=True)
@@ -79,14 +79,14 @@ async def quiz_action(message: Message, state: FSMContext):
 @dp.message_handler(Text(equals=['Да', 'Нет'], ignore_case=True),
                     state=ControllQuiz.waiting_for_delete_confirmation)
 async def delete_quiz_confirmation(message: Message, state: FSMContext):
-    global quiz
+    quiz = get_quiz()
     if message.text == 'Да':
         file_to_rem = quizes_path / f'{quiz.quiz_name}.pickle'
         file_to_rem.unlink()
         await state.finish()
         await message.answer(f'Вы удалили квиз - {quiz.quiz_name}',
                              reply_markup=menu_keyboard)
-        quiz = None
+        set_quiz(None)
     elif message.text == 'Нет':
         await ControllQuiz.waiting_for_action.set()
         await message.answer(
