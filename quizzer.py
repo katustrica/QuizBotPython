@@ -1,11 +1,9 @@
-import io
-import json
 import pickle
 import asyncio
 import logging
 from aiogram.types import Message
 from misc import quizes_path, bot, admin_id
-from user import User, get_all_users, set_all_users
+from user import get_all_users, set_all_users
 from typing import List, Dict
 from collections import OrderedDict
 
@@ -44,6 +42,12 @@ def set_current_question_correct_id(value):
     current_question_correct_id = value
 
 
+async def stop(self):
+    users = get_all_users()
+    for user_id in users:
+        await bot.send_message(user_id, 'Квиз деактивирован')
+
+
 class Quiz:
     def __init__(self, name):
         self.quiz_name: str = name  #Имя игры.
@@ -76,25 +80,41 @@ class Quiz:
         with open(filepath, 'wb') as f:
             pickle.dump(self, f)
 
-    async def start_rounds(self, message: Message):
-        for round_name, quiz_round in self.rounds.items():
-            await message.answer(
-                f'Раунд - {round_name}.'
-                f'\n Задержка между вопросами {self.times_between_questions[round_name]} сек.'
-            )
-            for number, question in enumerate(quiz_round):
-                global current_question_correct_id
-                current_question_correct_id = question.correct_option_id
-                await bot.send_poll(chat_id=message.chat.id, question=question.question_text,
-                                    is_anonymous=False, options=question.options, type='quiz',
-                                    correct_option_id=question.correct_option_id, open_period=question.open_time-25)
-                await asyncio.sleep(self.times_between_questions[round_name]-25)
-                if number == len(self.rounds[round_name]):
-                    await message.answer(f'Раунд {round_name} закончен')
-            await asyncio.sleep(5)
+    async def start_rounds(self):
         users = get_all_users()
-        await message.answer(f'Поздравляю!!! Квиз окончен, вы набрали {users[message.from_user.id].score} очков.')
+        for user_id in users:
+            for round_name, quiz_round in self.rounds.items():
+                if not quiz:
+                    await stop()
+                    return
+                await bot.send_message(
+                    user_id,
+                    f'Раунд - {round_name}.'
+                    f'\n Задержка между вопросами {self.times_between_questions[round_name]} сек.'
+                )
+                for number, question in enumerate(quiz_round):
+                    if not quiz:
+                        await stop()
+                        return
+                    global current_question_correct_id
+                    current_question_correct_id = question.correct_option_id
+                    await bot.send_poll(chat_id=user_id,
+                                        question=question.question_text,
+                                        is_anonymous=False,
+                                        options=question.options,
+                                        type='quiz',
+                                        correct_option_id=question.correct_option_id,
+                                        open_period=question.open_time)
+                    await asyncio.sleep(self.times_between_questions[round_name])
+                    if number == len(self.rounds[round_name]):
+                        await bot.send_message(user_id, f'Раунд {round_name} закончен')
+                await asyncio.sleep(5)
+            await bot.send_message(
+                user_id, f'Поздравляю!!! Квиз окончен, вы набрали {users[user_id].score} очков.'
+            )
         results = '\n'.join([user.result for user in users.values()])
+        set_all_users(None)
+        set_quiz(None)
         for id in admin_id:
             await bot.send_message(id, results)
 
@@ -108,14 +128,3 @@ class Question:
         self.correct_option_id: int = correct_option_id  # ID правильного ответа
         self.open_time: int = open_time                  # Время открытия (?)
 
-
-async def start_quiz_for_user(message: Message):
-    quiz_game = get_quiz()
-    if isinstance(quiz_game, Quiz):
-        await message.answer(f'Начался квиз - {quiz_game.quiz_name}')
-        all_users = get_all_users()
-        all_users[message.from_user.id] = User(message.from_user.full_name)
-        set_all_users(all_users)
-        await quiz_game.start_rounds(message)
-    else:
-        await message.answer(f'Квиз не загружен.')

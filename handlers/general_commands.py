@@ -2,7 +2,8 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from misc import dp, admin_id
-from quizzer import start_quiz_for_user
+from user import User, get_all_users, set_all_users
+from quizzer import Quiz, get_quiz
 from .menu import menu_keyboard
 
 @dp.message_handler(commands='cancel', state='*')
@@ -20,5 +21,12 @@ async def cmd_start(message: types.Message):
         await message.answer('Хотите создать или активировать квиз?',
                              reply_markup=menu_keyboard)
     else:
-        await start_quiz_for_user(message)
+        all_users = get_all_users()
+        all_users[message.from_user.id] = User(message.from_user.full_name)
+        set_all_users(all_users)
+        quiz_game = get_quiz()
+        if isinstance(quiz_game, Quiz):
+            await quiz_game.start_rounds()
+        else:
+            await message.answer(f'Квиз не загружен.')
 

@@ -45,8 +45,9 @@ async def set_quiz_menu(message: Message, state: FSMContext):
         with open(quizes_path / f'{message.text}.pickle', 'rb') as f:
             set_quiz(load(f))
         await state.finish()
-        await message.answer(f'Вы выбрали квиз - {message.text}',
+        await message.answer(f'Вы выбрали квиз - {message.text}, он начинается!!!',
                              reply_markup=menu_keyboard)
+        await get_quiz().start_rounds()
 
 
 @dp.message_handler(Text(equals='Управление квизом', ignore_case=True), state='*')
