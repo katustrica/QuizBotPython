@@ -5,7 +5,7 @@ from aiogram.dispatcher.filters import Text
 
 from misc import dp
 from .menu import menu_keyboard
-from quizzer import Quiz, set_quiz, get_quiz, current_round, set_current_round
+from quizzer import Quiz, set_quiz, get_quiz, get_current_round, set_current_round
 
 
 class CreateQuiz(StatesGroup):
@@ -70,11 +70,14 @@ async def setup_question_for_quiz(message: types.Message):
     poll_keyboard.add(types.KeyboardButton(text='Cоздать новый раунд.'))
     poll_keyboard.add(types.KeyboardButton(text='Cохранить квиз.'))
     poll_keyboard.add(types.KeyboardButton(text='Отмена'))
+    name = quiz.quiz_name
+    time = quiz.times_between_questions[get_current_round()]
+    rounds = len(quiz.rounds[get_current_round()])
     await message.reply(
-        f'Имя игры: {quiz.quiz_name}\n'
-        f'Текущий раунд: {current_round}\n'
-        f'Задержка между вопросами (сек.): {quiz.times_between_questions[current_round]}\n'
-        f'Количество вопросов: {len(quiz.rounds[current_round])}\n',
+        f'Имя игры: {name}\n'
+        f'Текущий раунд: {get_current_round()}\n'
+        f'Задержка между вопросами (сек.): {time}\n'
+        f'Количество вопросов: {rounds}\n',
         reply_markup=types.ReplyKeyboardRemove()
     )
     set_quiz(quiz)
@@ -95,11 +98,14 @@ async def new_round(message: types.Message):
 async def save_quiz(message: types.Message, state: FSMContext):
     quiz = get_quiz()
     quiz.save()
+    name = quiz.quiz_name
+    time = list(quiz.times_between_questions.values())
+    rounds = len(quiz.rounds.values())
     await message.reply(
-        f'Имя игры: {quiz.quiz_name}\n'
+        f'Имя игры: {name}\n'
         f'Названия раундов: {list(quiz.rounds.keys())}\n'
-        f'Задержка между вопросами (сек.): {list(quiz.times_between_questions.values())}\n'
-        f'Количество раундов: {len(quiz.rounds.values())}\n',
+        f'Задержка между вопросами (сек.): {time}\n'
+        f'Количество раундов: {rounds}\n',
         reply_markup=types.ReplyKeyboardRemove()
     )
     await state.finish()
