@@ -45,11 +45,11 @@ def set_current_question_correct_id(value):
 
 
 class Quiz:
-    def __init__(self, quiz_name):
-        self.quiz_name: str = quiz_name  #Имя игры.
+    def __init__(self, name):
+        self.quiz_name: str = name  #Имя игры.
         self.rounds: OrderedDict[str, List[Question]] = OrderedDict()
         self.times_between_questions: Dict[str, int] = {}
-        logging.info(f'Создана игра - {quiz_name}')
+        logging.info(f'Создана игра - {name}')
 
     def add_round(self, round_name):
         set_current_round(round_name)
@@ -92,9 +92,9 @@ class Quiz:
                 if number == len(self.rounds[round_name]):
                     await message.answer(f'Раунд {round_name} закончен')
             await asyncio.sleep(5)
-        await message.answer(f'Поздравляю!!! Квиз окончен, вы набрали {get_all_user()[message.from_user.id].score} очков.')
-
-        results = '\n'.join([user.result for user in get_all_users().values()])
+        users = get_all_users()
+        await message.answer(f'Поздравляю!!! Квиз окончен, вы набрали {users[message.from_user.id].score} очков.')
+        results = '\n'.join([user.result for user in users.values()])
         for id in admin_id:
             await bot.send_message(id, results)
 
