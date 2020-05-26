@@ -9,6 +9,9 @@ from quizzer import Quiz, set_quiz, get_quiz, get_current_round, set_current_rou
 
 
 class CreateQuiz(StatesGroup):
+    """
+    Содержит в себе все состояния пользователя.
+    """
     waiting_for_quiz_name = State()
     waiting_for_round_name = State()
     waiting_for_time_between_questions = State()
@@ -17,6 +20,14 @@ class CreateQuiz(StatesGroup):
 
 @dp.message_handler(Text(equals='Создать новый квиз', ignore_case=True), state='*')
 async def create_new_quiz(message: types.Message):
+    """
+    Первое состояние пользователя. Создание квиза
+
+    Parameters
+    ----------
+    message : types.Message
+        Сообщение пользователя 'Создать новый квиз'
+    """
     await message.reply('Вы решили создать новый Квиз.\n'
                         'Для начала, пожалуйста, пришлите название\n'
                         'Вашего теста (например, «Квиз на знание математики»).\n'
@@ -26,6 +37,14 @@ async def create_new_quiz(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_quiz_name, content_types=types.ContentTypes.TEXT)
 async def set_name_for_quiz(message: types.Message):
+    """
+    Принимает сообщение и ставит название квиза по этому сообщению.
+
+    Parameters
+    ----------
+    message : types.Message
+        Текст сообщения
+    """
     set_quiz(Quiz(message.text))
     await CreateQuiz.waiting_for_round_name.set()
     await message.reply(
@@ -36,6 +55,14 @@ async def set_name_for_quiz(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_round_name, content_types=types.ContentTypes.TEXT)
 async def set_name_for_round(message: types.Message):
+    """
+    Ставит название раунда и предлагает выбрать время между вопросами
+
+    Parameters
+    ----------
+    message : types.Message
+        Текст сообщения
+    """
     set_current_round(message.text)
     quiz = get_quiz()
     quiz.add_round(message.text)
@@ -48,6 +75,14 @@ async def set_name_for_round(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_time_between_questions, content_types=types.ContentTypes.TEXT)
 async def set_time_between_questions(message: types.Message):
+    """
+    Устанавливает время между сообщениями и предлагает создать следующий вопрос.
+
+    Parameters
+    ----------
+    message : types.Message
+        Текст сообщения
+    """
     quiz = get_quiz()
     quiz.set_time_between_quiestions(message.text)
     set_quiz(quiz)
@@ -62,6 +97,18 @@ async def set_time_between_questions(message: types.Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_question, content_types=types.ContentTypes.POLL)
 async def setup_question_for_quiz(message: types.Message):
+    """
+    Устанавивает вопрос и предлагает:
+    Закончить создание квиза,
+    создание нового вопроса,
+    сохранение квиза,
+    сброс квиза
+
+    Parameters
+    ----------
+    message : types.Message
+        Текст сообщения
+    """
     quiz = get_quiz()
     quiz.add_question(message.poll.question, message.poll.options, message.poll.correct_option_id)
     poll_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -85,6 +132,14 @@ async def setup_question_for_quiz(message: types.Message):
 @dp.message_handler(Text(equals='Cоздать новый раунд.', ignore_case=True),
                     state=CreateQuiz.waiting_for_question)
 async def new_round(message: types.Message):
+    """
+    Создание нового раунда.
+
+    Parameters
+    ----------
+    message : types.Message
+        Текст сообщения
+    """
     await CreateQuiz.waiting_for_round_name.set()
     await message.reply(
         'Пришлите название Вашего раунда (например, «История математики»).',
@@ -94,6 +149,16 @@ async def new_round(message: types.Message):
 
 @dp.message_handler(Text(equals='Cохранить квиз.', ignore_case=True), state=CreateQuiz.waiting_for_question)
 async def save_quiz(message: types.Message, state: FSMContext):
+    """
+    Сохранение квиза и его итог.
+
+    Parameters
+    ----------
+    message : types.Message
+        Текст сообщения
+    state : FSMContext
+        Сброс состояния
+    """
     quiz = get_quiz()
     quiz.save()
     await message.reply(

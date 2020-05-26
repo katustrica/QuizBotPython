@@ -13,36 +13,62 @@ current_question_correct_id = None
 
 
 def get_quiz():
+    """
+    Возвращает квиз
+    """
     global quiz
     return quiz
 
 
 def set_quiz(value):
+    """
+    Устанавливает квиз в класс Quiz
+    """
     global quiz
     quiz = value
 
 
 def get_current_round():
+    """
+    Возвращает текущий раунд
+    """
     global current_round
     return current_round
 
 
 def set_current_round(value):
+    """
+    Устанавливает текущий раунд
+
+    Parameters
+    ----------
+    value :
+        Раунд
+    """
     global current_round
     current_round = value
 
 
 def get_current_question_correct_id():
+    """
+    Возвращает правильный ответ текущего вопроса.
+    """
     global current_question_correct_id
     return current_question_correct_id
 
 
 def set_current_question_correct_id(value):
+    """
+    Устанавливает правильный ответ для текущего вопроса
+    """
     global current_question_correct_id
     current_question_correct_id = value
 
 
 async def stop(self):
+    """
+    Оповещяает всех пользователей об остановке квиза.
+    """
     users = get_all_users()
     for user_id in users:
         await bot.send_message(user_id, 'Квиз деактивирован')
@@ -50,23 +76,59 @@ async def stop(self):
 
 class Quiz:
     def __init__(self, name):
-        self.quiz_name: str = name  #Имя игры.
+        """
+        Инициализует класс квиз.
+
+        Parameters
+        ----------
+        name : str
+            Название квиза
+        """
+        self.quiz_name: str = name
         self.rounds: OrderedDict[str, List[Question]] = OrderedDict()
         self.times_between_questions: Dict[str, int] = {}
         logging.info(f'Создана игра - {name}')
 
     def add_round(self, round_name):
+        """
+        Добавляет раунд к квизу
+
+        Parameters
+        ----------
+        round_name : str
+            Название раунда.
+        """
         set_current_round(round_name)
         self.rounds[round_name] = []
         logging.info(f'Добавлен раунд - {round_name}')
 
     def set_time_between_quiestions(self, time):
+        """
+        Устанавливает время между вопросами
+
+        Parameters
+        ----------
+        time : str
+            Время между вопросами. Задается строго по кнопкам.
+        """
         time_list = time.split()
         time_in_seconds = int(time_list[0]) if time_list[1] == 'сек.' else int(time_list[0])*60
         self.times_between_questions[current_round] = time_in_seconds  #Задает время между вопросоами в секундах.
         logging.info(f'Для раунда {current_round} задано время между вопросами - {time_in_seconds} секунд')
 
     def add_question(self, question_text, options, correct_option_id):
+        """
+        Добавляет вопрос в раунд.
+
+        Parameters
+        ----------
+        question_text : str
+            Вопрос викторины
+        options :
+            Варианты ответа.
+        correct_option_id :
+            Правильный вариант ответа.
+        """
         self.rounds[current_round].append(
             Question(question_text=question_text,
                      options=[o.text for o in options],
@@ -75,12 +137,18 @@ class Quiz:
         logging.info(f'Для раунда {current_round} добавлен новый вопрос - {question_text}')
 
     def save(self):
+        """
+        Сохраняет квиз в папку quizes_path
+        """
         filepath = quizes_path / f'{self.quiz_name}.pickle'
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, 'wb') as f:
             pickle.dump(self, f)
 
     async def start_rounds(self):
+        """
+        Начинает отправлять вопросы пользователям. Старт викторины.
+        """
         users = get_all_users()
         for user_id in users:
             for round_name, quiz_round in self.rounds.items():
@@ -126,5 +194,5 @@ class Question:
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
         self.correct_option_id: int = correct_option_id  # ID правильного ответа
-        self.open_time: int = open_time                  # Время открытия (?)
+        self.open_time: int = open_time                  # Время 'жизни' вопроса = времени между вопросами
 
