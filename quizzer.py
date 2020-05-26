@@ -113,8 +113,8 @@ class Quiz:
                                         options=question.options,
                                         type='quiz',
                                         correct_option_id=question.correct_option_id,
-                                        open_period=question.open_time-25)
-                await asyncio.sleep(self.times_between_questions[round_name]-25)
+                                        open_period=question.open_time)
+                await asyncio.sleep(self.times_between_questions[round_name])
                 for user_id in users:
                     if number == len(self.rounds[round_name]):
                         await bot.send_message(user_id, f'Раунд {round_name} закончен')
