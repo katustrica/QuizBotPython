@@ -82,22 +82,23 @@ class Quiz:
 
     async def start_rounds(self):
         users = get_all_users()
-        for user_id in users:
-            for round_name, quiz_round in self.rounds.items():
-                if not quiz:
-                    await stop()
-                    return
+        for round_name, quiz_round in self.rounds.items():
+            if not quiz:
+                await stop()
+                return
+            for user_id in users:
                 await bot.send_message(
                     user_id,
                     f'Раунд - {round_name}.'
                     f'\n Задержка между вопросами {self.times_between_questions[round_name]} сек.'
                 )
-                for number, question in enumerate(quiz_round):
-                    if not quiz:
-                        await stop()
-                        return
-                    global current_question_correct_id
-                    current_question_correct_id = question.correct_option_id
+            for number, question in enumerate(quiz_round):
+                if not quiz:
+                    await stop()
+                    return
+                global current_question_correct_id
+                current_question_correct_id = question.correct_option_id
+                for user_id in users:
                     if question.media:
                         media = question.media
                         if media[0] == 'photo':
@@ -113,16 +114,18 @@ class Quiz:
                                         type='quiz',
                                         correct_option_id=question.correct_option_id,
                                         open_period=question.open_time-25)
-                    await asyncio.sleep(self.times_between_questions[round_name]-25)
+                await asyncio.sleep(self.times_between_questions[round_name]-25)
+                for user_id in users:
                     if number == len(self.rounds[round_name]):
                         await bot.send_message(user_id, f'Раунд {round_name} закончен')
-                await asyncio.sleep(1)
+            await asyncio.sleep(1)
+        for user_id in users:
             await bot.send_message(
                 user_id, f'Поздравляю!!! Квиз окончен, вы набрали {users[user_id].score} очков.'
             )
         results = '\n'.join([user.result for user in users.values()])
-        set_all_users(None)
-        set_quiz(None)
+        set_all_users({})
+        set_quiz({})
         for id in admin_id:
             await bot.send_message(id, results)
 

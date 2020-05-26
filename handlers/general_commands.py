@@ -21,12 +21,12 @@ async def cmd_start(message: types.Message):
         await message.answer('Хотите создать или активировать квиз?',
                              reply_markup=menu_keyboard)
     else:
-        all_users = get_all_users()
-        all_users[message.from_user.id] = User(message.from_user.full_name)
-        set_all_users(all_users)
         quiz_game = get_quiz()
         if isinstance(quiz_game, Quiz):
             await message.answer(f'Вы опоздали.')
         else:
-            await message.answer(f'Квиз не загружен.')
+            all_users = get_all_users()
+            all_users[message.from_user.id] = User(message.from_user.full_name)
+            set_all_users(all_users)
+            await message.answer(f'Ждите начала квиза.')
 

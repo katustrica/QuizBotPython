@@ -69,15 +69,15 @@ async def set_time_between_questions(message: Message):
 
 @dp.message_handler(state=CreateQuiz.waiting_for_question,
                     content_types=ContentTypes.AUDIO | ContentTypes.VIDEO | ContentTypes.PHOTO)
-async def setup_photo_for_quiestion(message: Message):
+async def setup_media_for_quiestion(message: Message):
     global media
     type = message.content_type
     if type == 'photo':
         media = ('photo', message.photo[-1].file_id)
     if type == 'video':
         media = ('video', message.video.file_id)
-    if type == 'auido':
-        media = ('auido', message.auido.file_id)
+    if type == 'audio':
+        media = ('audio', message.audio.file_id)
     await message.answer(f'Файл загружен. Тип - {type}')
 
 
