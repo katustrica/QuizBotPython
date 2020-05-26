@@ -27,6 +27,14 @@ control_quiz_keyboard = ReplyKeyboardMarkup(
 
 @dp.message_handler(Text(equals='Готовые квизы', ignore_case=True), state='*')
 async def show_quizes(message: Message):
+    """
+    Показывает все сохраненные квизы.
+
+    Parameters
+    ----------
+    message : Message
+        Текст сообщения
+    """
     quizes = list(quizes_path.glob('*.pickle'))
     keyboard = ReplyKeyboardMarkup(
         [['Отмена']]
@@ -38,6 +46,16 @@ async def show_quizes(message: Message):
 
 @dp.message_handler(state=ShowQuiz.waiting_for_quiz_name)
 async def set_quiz_menu(message: Message, state: FSMContext):
+    """
+    Показывает пользователю меню.
+
+    Parameters
+    ----------
+    message : Message
+        Текст сообщения
+    state : FSMContext
+        Сброс состояния пользователя.
+    """
     if message.text == 'Отмена':
         await state.finish()
         await message.answer(f'Хотите создать или активировать квиз?', reply_markup=menu_keyboard)
@@ -52,6 +70,14 @@ async def set_quiz_menu(message: Message, state: FSMContext):
 
 @dp.message_handler(Text(equals='Управление квизом', ignore_case=True), state='*')
 async def select_quiz_actions(message: Message):
+    """
+    Меню взаимодействия с квизом.
+
+    Parameters
+    ----------
+    message : Message
+        Текст сообщения
+    """
     quiz = get_quiz()
     if quiz:
         await ControllQuiz.waiting_for_action.set()
@@ -66,6 +92,16 @@ async def select_quiz_actions(message: Message):
 @dp.message_handler(Text(equals=['Деактивировать', 'Удалить'], ignore_case=True),
                     state=ControllQuiz.waiting_for_action)
 async def quiz_action(message: Message, state: FSMContext):
+    """
+    Обрабатывает команды Деактивировать и Удалить
+
+    Parameters
+    ----------
+    message : Message
+        Текст сообщения. Деактивировать\Удалить
+    state : FSMContext
+        Сброс состояния пользователя
+    """
     quiz = get_quiz()
     if message.text == 'Деактивировать':
         await message.answer(f'Квиз {quiz.quiz_name} деактивирован.', reply_markup=menu_keyboard)
@@ -80,6 +116,16 @@ async def quiz_action(message: Message, state: FSMContext):
 @dp.message_handler(Text(equals=['Да', 'Нет'], ignore_case=True),
                     state=ControllQuiz.waiting_for_delete_confirmation)
 async def delete_quiz_confirmation(message: Message, state: FSMContext):
+    """
+    Подтверждение удаления пользователя
+
+    Parameters
+    ----------
+    message : Message
+        Текст сообщения. Да\Нет
+    state : FSMContext
+        Сброс состояний пользователя.
+    """
     quiz = get_quiz()
     if message.text == 'Да':
         file_to_rem = quizes_path / f'{quiz.quiz_name}.pickle'
