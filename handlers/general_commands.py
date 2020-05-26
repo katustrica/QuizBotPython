@@ -26,7 +26,7 @@ async def cmd_start(message: types.Message):
         set_all_users(all_users)
         quiz_game = get_quiz()
         if isinstance(quiz_game, Quiz):
-            await quiz_game.start_rounds()
+            await message.answer(f'Вы опоздали.')
         else:
             await message.answer(f'Квиз не загружен.')
 

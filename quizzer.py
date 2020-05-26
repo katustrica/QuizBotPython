@@ -1,7 +1,6 @@
 import pickle
 import asyncio
 import logging
-from aiogram.types import Message
 from misc import quizes_path, bot, admin_id
 from user import get_all_users, set_all_users
 from typing import List, Dict
@@ -42,7 +41,7 @@ def set_current_question_correct_id(value):
     current_question_correct_id = value
 
 
-async def stop(self):
+async def stop():
     users = get_all_users()
     for user_id in users:
         await bot.send_message(user_id, 'Квиз деактивирован')
@@ -66,12 +65,13 @@ class Quiz:
         self.times_between_questions[current_round] = time_in_seconds  #Задает время между вопросоами в секундах.
         logging.info(f'Для раунда {current_round} задано время между вопросами - {time_in_seconds} секунд')
 
-    def add_question(self, question_text, options, correct_option_id):
+    def add_question(self, question_text, options, correct_option_id, media):
         self.rounds[current_round].append(
             Question(question_text=question_text,
                      options=[o.text for o in options],
                      correct_option_id=correct_option_id,
-                     open_time=self.times_between_questions[current_round]))
+                     open_time=self.times_between_questions[current_round],
+                     media=media))
         logging.info(f'Для раунда {current_round} добавлен новый вопрос - {question_text}')
 
     def save(self):
@@ -98,17 +98,25 @@ class Quiz:
                         return
                     global current_question_correct_id
                     current_question_correct_id = question.correct_option_id
+                    if question.media:
+                        media = question.media
+                        if media[0] == 'photo':
+                            await bot.send_photo(user_id, media[1])
+                        elif media[0] == 'video':
+                            await bot.send_video(user_id, media[1])
+                        elif media[0] == 'audio':
+                            await bot.send_audio(user_id, media[1])
                     await bot.send_poll(chat_id=user_id,
                                         question=question.question_text,
                                         is_anonymous=False,
                                         options=question.options,
                                         type='quiz',
                                         correct_option_id=question.correct_option_id,
-                                        open_period=question.open_time)
-                    await asyncio.sleep(self.times_between_questions[round_name])
+                                        open_period=question.open_time-25)
+                    await asyncio.sleep(self.times_between_questions[round_name]-25)
                     if number == len(self.rounds[round_name]):
                         await bot.send_message(user_id, f'Раунд {round_name} закончен')
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
             await bot.send_message(
                 user_id, f'Поздравляю!!! Квиз окончен, вы набрали {users[user_id].score} очков.'
             )
@@ -122,9 +130,10 @@ class Quiz:
 class Question:
     type: str = 'question'
 
-    def __init__(self, question_text, options, correct_option_id, open_time):
+    def __init__(self, question_text, options, correct_option_id, open_time, media):
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
         self.correct_option_id: int = correct_option_id  # ID правильного ответа
         self.open_time: int = open_time                  # Время открытия (?)
+        self.media: str = media
 
