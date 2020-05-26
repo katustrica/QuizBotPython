@@ -78,6 +78,7 @@ async def setup_photo_for_quiestion(message: Message):
         media = ('video', message.video.file_id)
     if type == 'auido':
         media = ('auido', message.auido.file_id)
+    message.answer(f'Файл загружен. Тип - {type}')
 
 
 @dp.message_handler(state=CreateQuiz.waiting_for_question, content_types=ContentTypes.POLL)
