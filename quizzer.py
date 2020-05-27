@@ -1,7 +1,6 @@
 import pickle
 import asyncio
 import logging
-from aiogram.types import Message
 from misc import quizes_path, bot, admin_id
 from user import get_all_users, set_all_users
 from typing import List, Dict
@@ -65,7 +64,7 @@ def set_current_question_correct_id(value):
     current_question_correct_id = value
 
 
-async def stop(self):
+async def stop():
     """
     Оповещяает всех пользователей об остановке квиза.
     """
@@ -116,7 +115,8 @@ class Quiz:
         self.times_between_questions[current_round] = time_in_seconds  #Задает время между вопросоами в секундах.
         logging.info(f'Для раунда {current_round} задано время между вопросами - {time_in_seconds} секунд')
 
-    def add_question(self, question_text, options, correct_option_id):
+
+    def add_question(self, question_text, options, correct_option_id, media):
         """
         Добавляет вопрос в раунд.
 
@@ -133,7 +133,8 @@ class Quiz:
             Question(question_text=question_text,
                      options=[o.text for o in options],
                      correct_option_id=correct_option_id,
-                     open_time=self.times_between_questions[current_round]))
+                     open_time=self.times_between_questions[current_round],
+                     media=media))
         logging.info(f'Для раунда {current_round} добавлен новый вопрос - {question_text}')
 
     def save(self):
@@ -142,6 +143,7 @@ class Quiz:
         """
         filepath = quizes_path / f'{self.quiz_name}.pickle'
         filepath.parent.mkdir(parents=True, exist_ok=True)
+        logging.info(f'Сохранена игра - {self.quiz_name}.pickle')
         with open(filepath, 'wb') as f:
             pickle.dump(self, f)
 
@@ -150,22 +152,34 @@ class Quiz:
         Начинает отправлять вопросы пользователям. Старт викторины.
         """
         users = get_all_users()
-        for user_id in users:
-            for round_name, quiz_round in self.rounds.items():
-                if not quiz:
-                    await stop()
-                    return
+        logging.info(f'Началась игра - {self.quiz_name}')
+        for round_name, quiz_round in self.rounds.items():
+            if not quiz:
+                await stop()
+                return
+            logging.info(f'Начался раунд - {round_name}.')
+            for user_id in users:
                 await bot.send_message(
                     user_id,
                     f'Раунд - {round_name}.'
                     f'\n Задержка между вопросами {self.times_between_questions[round_name]} сек.'
                 )
-                for number, question in enumerate(quiz_round):
-                    if not quiz:
-                        await stop()
-                        return
-                    global current_question_correct_id
-                    current_question_correct_id = question.correct_option_id
+            for number, question in enumerate(quiz_round):
+                if not quiz:
+                    await stop()
+                    return
+                logging.info(f'Начался вопрос - {question.question_text}.')
+                global current_question_correct_id
+                current_question_correct_id = question.correct_option_id
+                for user_id in users:
+                    if question.media:
+                        media = question.media
+                        if media[0] == 'photo':
+                            await bot.send_photo(user_id, media[1])
+                        elif media[0] == 'video':
+                            await bot.send_video(user_id, media[1])
+                        elif media[0] == 'audio':
+                            await bot.send_audio(user_id, media[1])
                     await bot.send_poll(chat_id=user_id,
                                         question=question.question_text,
                                         is_anonymous=False,
@@ -173,26 +187,34 @@ class Quiz:
                                         type='quiz',
                                         correct_option_id=question.correct_option_id,
                                         open_period=question.open_time)
-                    await asyncio.sleep(self.times_between_questions[round_name])
+                await asyncio.sleep(self.times_between_questions[round_name])
+                for user_id in users:
                     if number == len(self.rounds[round_name]):
                         await bot.send_message(user_id, f'Раунд {round_name} закончен')
-                await asyncio.sleep(5)
+            await asyncio.sleep(1)
+        users_scores = {user.name: user.score for user in users.values()}
+        users_scores_msg = '\n'.join([
+            f'{s_user[0]} набрал {s_user[1]} очков.' for s_user
+            in sorted(users_scores.items(), key=lambda us: (us[1], us[0]), reverse=True)]
+        )
+        for user_id in users:
             await bot.send_message(
-                user_id, f'Поздравляю!!! Квиз окончен, вы набрали {users[user_id].score} очков.'
+                user_id, users_scores_msg
             )
-        results = '\n'.join([user.result for user in users.values()])
-        set_all_users(None)
-        set_quiz(None)
         for id in admin_id:
-            await bot.send_message(id, results)
+            await bot.send_message(id, users_scores_msg)
+        set_all_users({})
+        set_quiz({})
+
 
 
 class Question:
     type: str = 'question'
 
-    def __init__(self, question_text, options, correct_option_id, open_time):
+    def __init__(self, question_text, options, correct_option_id, open_time, media):
         self.question_text: str = question_text          # Текст вопроса
         self.options: List[str] = [*options]             # 'Распакованное' содержимое массива m_options в массив options
         self.correct_option_id: int = correct_option_id  # ID правильного ответа
         self.open_time: int = open_time                  # Время 'жизни' вопроса = времени между вопросами
+        self.media: str = media
 

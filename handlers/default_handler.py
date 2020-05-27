@@ -1,6 +1,6 @@
 from aiogram import types
 
-from misc import dp, bot
+from misc import dp
 
 
 @dp.message_handler(content_types=types.ContentTypes.ANY, state='*')
