@@ -143,6 +143,7 @@ class Quiz:
         """
         filepath = quizes_path / f'{self.quiz_name}.pickle'
         filepath.parent.mkdir(parents=True, exist_ok=True)
+        logging.info(f'Сохранена игра - {self.quiz_name}.pickle')
         with open(filepath, 'wb') as f:
             pickle.dump(self, f)
 
@@ -151,10 +152,12 @@ class Quiz:
         Начинает отправлять вопросы пользователям. Старт викторины.
         """
         users = get_all_users()
+        logging.info(f'Началась игра - {self.quiz_name}')
         for round_name, quiz_round in self.rounds.items():
             if not quiz:
                 await stop()
                 return
+            logging.info(f'Начался раунд - {round_name}.')
             for user_id in users:
                 await bot.send_message(
                     user_id,
@@ -165,6 +168,7 @@ class Quiz:
                 if not quiz:
                     await stop()
                     return
+                logging.info(f'Начался вопрос - {question.question_text}.')
                 global current_question_correct_id
                 current_question_correct_id = question.correct_option_id
                 for user_id in users:
@@ -182,21 +186,26 @@ class Quiz:
                                         options=question.options,
                                         type='quiz',
                                         correct_option_id=question.correct_option_id,
-                                        open_period=question.open_time)
-                await asyncio.sleep(self.times_between_questions[round_name])
+                                        open_period=question.open_time-25)
+                await asyncio.sleep(self.times_between_questions[round_name]-25)
                 for user_id in users:
                     if number == len(self.rounds[round_name]):
                         await bot.send_message(user_id, f'Раунд {round_name} закончен')
             await asyncio.sleep(1)
+        users_scores = {user.name: user.score for user in users.values()}
+        users_scores_msg = '\n'.join([
+            f'{s_user[0]} набрал {s_user[1]} очков.' for s_user
+            in sorted(users_scores.items(), key=lambda us: (us[1], us[0]), reverse=True)]
+        )
         for user_id in users:
             await bot.send_message(
-                user_id, f'Поздравляю!!! Квиз окончен, вы набрали {users[user_id].score} очков.'
+                user_id, users_scores_msg
             )
-        results = '\n'.join([user.result for user in users.values()])
+        for id in admin_id:
+            await bot.send_message(id, users_scores_msg)
         set_all_users({})
         set_quiz({})
-        for id in admin_id:
-            await bot.send_message(id, results)
+
 
 
 class Question:
